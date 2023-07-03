@@ -24,83 +24,15 @@ To support research on the effects of the covid19 pandemic, Google made this dat
 
 Regardless the data is a good fit for estimating the effect of the 9€-Ticket.
 
-As the country data only seems to include the most recent year, we download the global dataset (which is around 1GB in size) and store it in the data folder.
-
-For mapping our results later, we also download the outlines for Germany from the [GADM database](https://gadm.org/data.html).
-
-```{r}
-# Download data
-# Google LLC "Google COVID-19 Community Mobility Reports".
-# https://www.google.com/covid19/mobility/ Accessed: <01. July 2023>.
-
-mobility_report_path <- "../Data/Global_Mobility_Report.csv"
-de_polygon_path <- "../Data/gadm_1_germany.rds"
-
-if(!file.exists(mobility_report_path)){
-  download.file("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv",
-                destfile = mobility_report_path)
-}
-
-if(!file.exists(de_polygon_path)){
-  download.file("https://biogeo.ucdavis.edu/data/gadm3.6/Rsf/gadm36_DEU_1_sf.rds",
-                destfile = de_polygon_path)
-}
-```
-
 ## 3. Preprocessing
 
 To reduce the effect of within-week variation, we calculate the 7-day rolling average of transit station activity. Further, we set the baseline to 100 instead of 0 to ease visualization later on.
 
-```{r}
-# load and keep only entries for germany
-mobility_de <- read_csv(mobility_report_path) |> filter(country_region_code=="DE")
-
-mobility_de <- 
-  mobility_de |> 
-  # the change from baseline can also be considered an index, where the value from previous years is a baseline
-  mutate(transit_index = transit_stations_percent_change_from_baseline + 100) |> 
-  # prepare time parameters
-  mutate(date = ymd(date),
-         doy = yday(date),
-         month = month(date),
-         year = year(date),
-         ticket = (month %in% c(6,7,8) & year == 2022),
-         # calculate rolling 7day average
-         rollmean_transit_index = rollmeanr(transit_index, 7,na.pad=T,align="center"))
-```
-
-A question which arises at this point is the spatial precision of the data. Is it collected at the level of states, districts, or communes?
-
-To answer this question, we check which spatial subunits we have available for germany.
-
-```{r}
-cat("Unique spatial units at level 1: \n", unique(mobility_de$sub_region_1))
-```
-
-It seems that level 1 corresponds to the aggregated data for all Germany (where the value is NA), and to the 16 federal states.
-
-```{r}
-cat("\nUnique spatial units at level 2: \n", unique(mobility_de$sub_region_2))
-
-```
-
-No spatial units at level 2 are included. It seems that level 1 is as detailed as we can go!
-
 One further data cleaning step is necessary. While both the GADM and the mobility data includes a code for each state of Germany, the mobility data uses the [iso_3166_2\_code](https://www.iso.org/standard/63546.html) while the GADM polygons uses the [HASC_1](https://data.apps.fao.org/catalog/dataset/hasc-codes) format, which is similar, but not precisely the same. We manually adjust the codes to match, which will allow us to join the results to the map later.
 
-```{r}
-# load polygons for germany
-sf_de <- 
-  read_rds(de_polygon_path) |> 
-  # create the iso_3166_2_code from the HASC_1 code, which is in this case the same
-  # except for Brandenburg, where we have to make a manual adjustment
-  mutate(iso_3166_2_code = str_replace(HASC_1,"\\.","-"),
-         iso_3166_2_code = ifelse(HASC_1=="DE.BR","DE-BB",iso_3166_2_code))|> 
-  # add the sub_region_name via the iso_3166_2_code 
-  left_join(mobility_de |> count(sub_region_1,iso_3166_2_code)|> drop_na())
-```
-
 Let's plot the data as yearly activity curves for all of Germany.
+
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F1_overview.png"  width="400" ></p>
 
 ```{r fig.height=3, fig.width=4}
 mobility_de |> 
