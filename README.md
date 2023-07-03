@@ -54,18 +54,18 @@ Then it is just a matter of subtracting the excess activity in 2021 from the exc
 
 The following figure illustrates the regression and calculation of the excess activity.
 
-<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F2_excess.png"></p>
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F2_excess.png"  width="600" ></p>
 
 The excess is roughly around 10%-20% which is higher than the previous year (2021) by several percentage points. That seems like a plausible results, as it roughly aligns with the information reported by Deutsche Bahn [-source-](https://www.rnd.de/politik/9-euro-ticket-deutsche-bahn-sagt-es-funktioniert-OYJHQEUV4ZCOTBAXJ2B3WCDMZM.html)
 
 ## 5. Visualize
 
-<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F3_excess_relative.png"></p>
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F3_excess_relative.png"  width="600" ></p>
 
 
 We can see that the influence of summer is much stronger in some states than in others. In Berlin, little seems to change, with transit station visits increasing by around 5% only. It is completely different in Mecklenburg-Vorpommern, where activity is around 25% higher than expected. The additional increase in 2022 (presumably resulting from the 9€-Ticket), is shown by the error-bars. Is there a spatial pattern? Time to put the effect on a map!
 
-<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F4_excess_map.png"></p>
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F4_excess_map.png"  width="600" ></p>
 
 It is clear that substantial differences exist, however, there is no clear north-south or east-west gradient. The effect is only moderate in the largest states (Bavaria, Lower Saxony) and highest in the moderately large states (Saxony-Anhalt, Schleswig Holstein).
 
