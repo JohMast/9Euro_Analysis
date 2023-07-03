@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/Mobility_Changes_Summer_2022.png"></p>
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/Mobility_Changes_Summer_2022.png"  width="600" ></p>
 
 # The effect of the 9€-Ticket on transit activity
 ## 1. Introduction
