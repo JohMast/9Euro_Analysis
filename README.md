@@ -1,14 +1,4 @@
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,warning = FALSE, message = FALSE)
-library(tidyverse)
-library(zoo)
-library(sf)
-library(fuzzyjoin)
-Sys.setlocale("LC_ALL","English")
-options(timeout=360)
-```
-
+# The effect of the 9€-Ticket on transit activity
 ## 1. Introduction
 
 The 9€-Ticket was heavily discounted travel pass for German regional and local public transport. Tickets for each calendar month June, July, and August, were available for the comparatively low price of 9€ [-source-](https://www.bundesregierung.de/breg-de/aktuelles/faq-9-euro-ticket-2028756).
