@@ -34,35 +34,9 @@ Let's plot the data as yearly activity curves for all of Germany.
 
 <p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F1_overview.png"  width="400" ></p>
 
-```{r fig.height=3, fig.width=4}
-mobility_de |> 
-  # select aggregated data for whole of germany
-  filter(is.na(sub_region_1)) |> 
-  mutate(year=factor(year)) |> 
-  ggplot(aes(doy,rollmean_transit_index,col=year,group=year))+
-  geom_line()+
-  theme_bw()+
-  scale_color_manual(values=c("#249cff","#246bff","#ffb824"))+
-  labs(title = "Transit station visits",
-       caption = "Data by Google LLC",
-       y="Transit index",x="Day of Year")
-```
+And for each state:
 
-And for each federal state:
-
-```{r}
-mobility_de |> 
-  # select aggregated data for whole of germany
-  filter(!is.na(sub_region_1)) |> 
-  mutate(year=factor(year)) |> 
-  ggplot(aes(doy,rollmean_transit_index,col=year,group=year))+
-  geom_line()+  theme_bw()+
-  facet_wrap(~sub_region_1)+
-  scale_color_manual(values=c("#249cff","#246bff","#ffb824"))+
-  labs(title = "Transit station visits for each german state",
-       caption = "Data by Google LLC",
-       y="Transit index",x="Day of Year")
-```
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F1_overview_states.png"  width="400" ></p>
 
 The data looks plausible, and there are no gaps! Only the year 2021 is complete from start to finish, though.
 
@@ -78,111 +52,20 @@ To isolate this effect, however, we must consider:
 
 Then it is just a matter of subtracting the excess activity in 2021 from the excess activity in 2022 to arrive at a heuristic measure for the effect of the 9€-Ticket.
 
-```{r}
-
-# function which calculates summer excess from a linearly interpolated baseline
-divergence_from_lin <- function(df){
-  linear_model <- lm(formula = rollmean_transit_index~doy,
-                     data = df |> filter(month %in% c(5,9)))
-  df$lin_pred <- predict(linear_model,newdata = df)
-  df$excess <- df$rollmean_transit_index - df$lin_pred 
-  df$excess_rel <- df$excess/df$lin_pred
-  return(df)
-}
-
-mobility_de <- 
-  mobility_de |> 
-  mutate(year=factor(year)) |> 
-  group_by(year,sub_region_1) |> 
-  group_map(~divergence_from_lin(.x),.keep=TRUE) |> 
-  bind_rows()
-
-excess_stats <- 
-  mobility_de |> 
-  filter(month %in% c(6,7,8)) |> 
-  group_by(year,sub_region_1) |> 
-  summarise(excess=sum(excess),
-            excess_rel=mean(excess_rel)) |> 
-  group_by(sub_region_1) |> 
-  mutate(excess_rel_prev_year = lag(excess_rel),
-         excess_rel_over_prev_year = excess_rel-excess_rel_prev_year,
-         excess_rel_over_prev_year_label = paste0(" + ", round(excess_rel_over_prev_year*100)," %"))
-
-```
-
 The following figure illustrates the regression and calculation of the excess activity.
 
-```{r fig.height=5, fig.width=6}
-
-mobility_de |> 
-  filter(is.na(sub_region_1)) |> 
-  ggplot(aes(doy,rollmean_transit_index,col=year,group=year,fill=year))+
-  geom_line()+
-  geom_ribbon(aes(x=doy, ymax=rollmean_transit_index, ymin=lin_pred),data = mobility_de |> filter(month %in% c(6,7,8),is.na(sub_region_1)), alpha=.3)+
-  geom_line(aes(doy,lin_pred),data = mobility_de |> filter(month %in% c(5,6,7,8,9),is.na(sub_region_1)),col="black")+
-  facet_wrap(~year,ncol=1)+
-  theme_bw()+
-  theme(legend.position = "none")+
-  scale_color_manual(values=c("#249cff","#246bff","#ffb824"))+
-  scale_fill_manual(values=c("#249cff","#246bff","#ffb824"))+
-  labs(title = "Transit station visits",
-       subtitle = "The highlighted area indicates the excess activity during June - August\ncompared to a linear regression between May and September",
-       caption = "Data by Google LLC",
-       y="Transit index",x="Day of Year")
-```
-
-We should check if the results are plausible.
-
-Let's take a look at the excess activity for some states:
-
-```{r}
-DT::datatable(excess_stats |> filter(year==2022) |> mutate(across(where(is.numeric), round, 3)))
-```
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F2_excess.png"></p>
 
 The excess is roughly around 10%-20% which is higher than the previous year (2021) by several percentage points. That seems like a plausible results, as it roughly aligns with the information reported by Deutsche Bahn [-source-](https://www.rnd.de/politik/9-euro-ticket-deutsche-bahn-sagt-es-funktioniert-OYJHQEUV4ZCOTBAXJ2B3WCDMZM.html)
 
 ## 5. Visualize
 
-The numbers become much clearer in a figure.
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F3_excess_relative.png"></p>
 
-```{r fig.height=7, fig.width=7}
-excess_stats |> 
-  filter(!is.na(sub_region_1)) |> 
-  ggplot(aes(year,excess_rel,fill=year))+
-  geom_col()+  
-  geom_errorbar(aes(ymin=excess_rel_prev_year,ymax=excess_rel),data=excess_stats |> filter(year==2022,!is.na(sub_region_1)))+
-  geom_text(aes(y= excess_rel+0.05,label=excess_rel_over_prev_year_label),data=excess_stats |> filter(year==2022,!is.na(sub_region_1)))+
-  facet_wrap(~sub_region_1) + 
-  theme_bw()+
-  theme(legend.position = "none",
-        axis.title.x = element_blank())+
-  scale_y_continuous(labels=scales::label_percent())+
-  scale_fill_manual(values=c("#249cff","#246bff","#ffb824"))+
-  labs(title = "Excess transit station activity during summer months",
-       caption = "Data by Google LLC",
-       y="Excess transit station activity relative to May and September")
-```
 
 We can see that the influence of summer is much stronger in some states than in others. In Berlin, little seems to change, with transit station visits increasing by around 5% only. It is completely different in Mecklenburg-Vorpommern, where activity is around 25% higher than expected. The additional increase in 2022 (presumably resulting from the 9€-Ticket), is shown by the error-bars. Is there a spatial pattern? Time to put the effect on a map!
 
-```{r}
-sf_de  |>
-  # add the excess stats via the sub_region_name
-  left_join(excess_stats |> filter(year==2022,!is.na(sub_region_1)),by = "sub_region_1") |> 
-  ggplot(aes(fill=excess_rel_over_prev_year,label=excess_rel_over_prev_year_label))+
-  geom_sf()+ 
-  geom_sf_label(size=2.5)+
-  theme_bw()+
-  theme(legend.position = "none",
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_blank(),
-        panel.grid = element_blank())+
-  scale_fill_gradient(low="gray80",high="#ffb824")+
-  labs(title = "Effect of 9€-Ticket on transit station activity",
-       subtitle = "Percentage-points increase in transit station activity in summer 2022\nover the increase in summer 2021",
-       caption = "Data by Google LLC")
-```
+<p align="center"><img src="https://github.com/JohMast/9Euro_Analysis/blob/main/Documentation/F4_excess_map.png"></p>
 
 It is clear that substantial differences exist, however, there is no clear north-south or east-west gradient. The effect is only moderate in the largest states (Bavaria, Lower Saxony) and highest in the moderately large states (Saxony-Anhalt, Schleswig Holstein).
 
